@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">WikiAppSearch</string>
+    <string name="home">Vyhľadané články</string>
+    <string name="favourite">Uložené články</string>
+    <string name="button_save">Uložiť</string>
+    <string name="search_hint">hladať</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
