@@ -2,9 +2,18 @@
     <string name="app_name">WikiAppSearch</string>
     <string name="home">Vyhľadané články</string>
     <string name="favourite">Uložené články</string>
+    <string name="button_delete">Vymazať</string>
     <string name="button_save">Uložiť</string>
+    <string name="back_button">Späť</string>
     <string name="search_hint">hladať</string>
-
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="no_internet">Žiadne internetové pripojenie</string>
+    <string name="no_interner1">Môžete si prezerať len uložené članky.</string>
+    <string name="no_internet_button">Zavrieť</string>
+    <string name="unsaved_article">neuložený článok</string>
+    <string name="saved_article">uložený článok</string>
+    <string name="language_cz">cz</string>
+    <string name="language_de">de</string>
+    <string name="language_en">en</string>
+    <string name="language_pl">pl</string>
+    <string name="language_sk">sk</string>
 </resources>

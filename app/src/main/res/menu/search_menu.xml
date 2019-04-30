@@ -3,6 +3,21 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/cz"
+        android:title="@string/language_cz" />
+    <item
+        android:id="@+id/de"
+        android:title="@string/language_de" />
+    <item
+        android:id="@+id/en"
+        android:title="@string/language_en" />
+    <item
+        android:id="@+id/pl"
+        android:title="@string/language_pl" />
+    <item
+        android:id="@+id/sk"
+        android:title="@string/language_sk" />
+    <item
         android:id="@+id/search"
         android:icon="@drawable/search"
         android:title="@string/search_hint"

@@ -1,113 +1,116 @@
 package com.example.wikiappsearch.Fragments;
 
-import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.Button;
 
+import com.example.wikiappsearch.Adapter.ArticleRecyclerAdapter;
+import com.example.wikiappsearch.Cards.Article;
 import com.example.wikiappsearch.R;
 
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link savedArticles.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link savedArticles#newInstance} factory method to
- * create an instance of this fragment.
- */
-public class savedArticles extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
-    private OnFragmentInteractionListener mListener;
+public class savedArticles extends Fragment implements Serializable {
+
+    private List<Article> article_list;
+    private RecyclerView article_view_list;
+    private ArticleRecyclerAdapter articleRecyclerAdapter;
+    Button delete;
 
     public savedArticles() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment savedArticles.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static savedArticles newInstance(String param1, String param2) {
-        savedArticles fragment = new savedArticles();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-    }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        TextView textView = new TextView(getActivity());
-        textView.setText(R.string.hello_blank_fragment);
-        return textView;
-    }
+        // Inflate the layout for this fragment
+        View view = inflater.inflate(R.layout.fragment_show_articles, container, false);
 
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
+        delete = (Button) view.findViewById(R.id.removeB);
+
+        article_list = new ArrayList<>();
+        article_view_list = view.findViewById(R.id.articleslist);
+
+        articleRecyclerAdapter = new ArticleRecyclerAdapter(article_list);
+        article_view_list.setLayoutManager(new LinearLayoutManager(container.getContext()));
+        article_view_list.setAdapter(articleRecyclerAdapter);
+        article_view_list.setHasFixedSize(true);
+
+        String parsedTitle;
+        String parsedSnippet;
+        String parsedInformation;
+        int parsedId;
+
+
+        try {
+
+
+            //zobrazenie ulozenycch clankou pre adapter
+            File f = new File(Objects.requireNonNull(getContext()).getFilesDir().getPath()+ "/articleJS.json");
+            if(f.exists()){
+                JSONObject jsonParent = new JSONObject(loadFile(f));
+                JSONArray jsonArr = jsonParent.getJSONArray("ListArticles");
+                for (int i = 0; i < jsonArr.length(); i++) {
+                    JSONObject jsonArticle = jsonArr.getJSONObject(i);
+                    parsedSnippet = (jsonArticle.getString("content"));
+                    parsedInformation = (jsonArticle.getString("information"));
+                    parsedTitle = (jsonArticle.getString("title"));
+                    parsedId = (jsonArticle.getInt("id"));
+                    String language = "";
+
+                    Article article = new Article(parsedId, parsedTitle, parsedSnippet, parsedInformation, language);
+                    article_list.add(article);
+                }
+
+
+
+                Log.d("saved vypis : ",jsonParent.toString());
+
+            }
+
+
         }
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+        catch(JSONException ex) {
+            ex.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
+
+        articleRecyclerAdapter.notifyDataSetChanged();
+        return view;
     }
 
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
+
+    //nacitanie suboru json
+    private String loadFile(File f) throws IOException {
+        FileInputStream is = new FileInputStream(f);
+        int size = is.available();
+        byte[] buffer = new byte[size];
+        is.read(buffer);
+        is.close();
+        String mResponse = new String(buffer);
+        return mResponse;
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
-    }
+
 }

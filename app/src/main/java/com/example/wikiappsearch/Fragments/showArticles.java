@@ -1,111 +1,176 @@
 package com.example.wikiappsearch.Fragments;
 
-import android.content.Context;
-import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
+import com.example.wikiappsearch.Adapter.ArticleRecyclerAdapter;
+import com.example.wikiappsearch.Cards.Article;
 import com.example.wikiappsearch.R;
 
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link showArticles.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link showArticles#newInstance} factory method to
- * create an instance of this fragment.
- */
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+
+import static android.content.ContentValues.TAG;
+
 public class showArticles extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private List<Article> article_list;
+    private RecyclerView article_view_list;
+    private ArticleRecyclerAdapter articleRecyclerAdapter;
+    private String hladane = "";
+    private String language = "sk";
+    private int sroffset = 0;
 
-    private OnFragmentInteractionListener mListener;
+    Button delete;
 
     public showArticles() {
         // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment showArticles.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static showArticles newInstance(String param1, String param2) {
-        showArticles fragment = new showArticles();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_show_articles, container, false);
+        View view = inflater.inflate(R.layout.fragment_show_articles, container, false);
+        delete = (Button) view.findViewById(R.id.removeB);
+
+        article_list = new ArrayList<>();
+        article_view_list = view.findViewById(R.id.articleslist);
+        articleRecyclerAdapter = new ArticleRecyclerAdapter(article_list);
+        article_view_list.setLayoutManager(new LinearLayoutManager(container.getContext()));
+        article_view_list.setAdapter(articleRecyclerAdapter);
+        article_view_list.setHasFixedSize(true);
+        Bundle bundle = this.getArguments();
+
+
+        ///ak nascrolujeme dou na posledny clanok offset sa nam pripocita o 10
+        // takze dalsie clanky dynamicky nacitana ked znova spustime fetching
+        article_view_list.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+
+                Boolean reachedBottom = !recyclerView.canScrollVertically(1);
+
+                if (reachedBottom) {
+                    sroffset +=10;
+                    fetchData fetchData = new fetchData();
+                    fetchData.execute();
+                }
+            }
+        });
+
+        //znaky podla ktorych hladame a jazyk v ktorom hladame v api wiki
+        try {
+            if (bundle != null && bundle.getString("hladat") != null) {
+                hladane = bundle.getString("hladat");
+                fetchData fetchData = new fetchData();
+                fetchData.execute();
+            }
+            if (bundle != null && bundle.getString("language") != null) {
+                language = bundle.getString("language");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        return view;
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
+
+
+    //nacitanie dat z api wiki podla parametrov
+    public class fetchData extends AsyncTask<Void, Void, List<Article>> {
+
+        String data = "";
+        String parsedTitle = "";
+        String parsedSnippet = "";
+        String parsedInformation = "";
+        int parsedId;
+
+        @Override
+        protected List<Article> doInBackground(Void... voids) {
+            try {
+
+
+                URL url = new URL("https://"+ language + ".wikipedia.org/w/api.php?action=query&list=search&utf8=&sroffset="+sroffset+"&srlimit=10&format=json&srsearch=" + hladane.replaceAll(" ","%20"));
+
+                Log.d("url hladanie  : ",url.toString());
+                HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+                InputStream inputStream = httpURLConnection.getInputStream();
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+
+                String line = "";
+                while (line != null) {
+                    line = bufferedReader.readLine();
+                    data += line;
+                }
+
+                JSONObject obj = new JSONObject(data);
+                JSONObject query = obj.getJSONObject("query");
+                JSONArray JA =  query.getJSONArray("search");
+
+                for (int i = 0; i < JA.length(); i++) {
+                    JSONObject JO = JA.getJSONObject(i);
+                    parsedTitle = (JO.getString("title"));
+                    parsedSnippet = (JO.getString("snippet"));
+                    parsedInformation = (JO.getString("timestamp"));
+                    parsedId = (JO.getInt("pageid"));
+                    Log.d("parsovane id 1  : ",String.valueOf(parsedId));
+
+                    Article article = new Article(parsedId, parsedTitle, parsedSnippet, parsedInformation, language);
+                    article_list.add(article);
+                }
+
+
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return article_list;
+        }
+
+        @Override
+        protected void onPostExecute(List<Article> articleList) {
+
+            if (articleList != null) {
+
+                articleRecyclerAdapter.notifyDataSetChanged();
+            }
+            else {
+                Log.d(TAG, "Zlyhalo parsovanie");
+            }
+
         }
     }
 
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
-    }
 
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
-    }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
-    }
+
 }

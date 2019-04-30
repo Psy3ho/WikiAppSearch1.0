@@ -1,14 +1,27 @@
 package com.example.wikiappsearch.Cards;
 
+
 public class Article {
     public int id;
-    public String title, content, information;
+    public String title;
+    public String content;
+    public String information;
+    public String language;
 
-    public Article(int id, String title, String content, String information) {
+    public Article(int id, String title, String content, String information, String language) {
         this.id = id;
         this.title = title;
         this.content = content;
         this.information = information;
+        this.language = language;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
     }
 
     public int getId() {
